@@ -1,0 +1,1 @@
+$(document).ready(function(){$('[data-toggle="tooltip"]').tooltip();$("form .form-chosen").chosen({width:"100%"});$(".pnlSujeito").on("click","h3",function(){var n=$(this).parent();n.hasClass("sujeito")?n.toggleClass("semi-aberto"):n.toggleClass("aberto");n.find(".retratil").slideToggle()})})

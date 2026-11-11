@@ -22,6 +22,27 @@ class EndpointsNfse:
     NOTAS_EMITIDAS = f"{BASE_URL}/EmissorNacional/Notas/Emitidas"
     NOTAS_RECEBIDAS = f"{BASE_URL}/EmissorNacional/Notas/Recebidas"
 
+class Configuracoes:
+    HTML_HEAD = """
+        <head>
+            <meta name="viewport" content="width=device-width" />
+            <title>NFS-e | Emissor Nacional</title>
+            <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
+            <link href="css/PDtS8QyKLPV_WFB7lNdmPoWCZ7YlRw1fT_kU1nqUfP81.css" rel="stylesheet"/>
+            <link href="css/r3Oy2mATr5fNPFrAwXyrpimbFdOiQI95thFAzt-x_uA1.css" rel="stylesheet"/>
+
+            <script type="text/javascript">
+                window.UrlBase = "https://www.nfse.gov.br/consultapublica/";
+                window.UrlRest = "https://restnfseprod.srv.cd.serpro";
+            </script>
+    
+            <script src="js/GbkjYar3JmMIqiJ9pjLxX5XtoaEPte_ZbIFG2t7NW0Q1.js"></script>
+            <script src="js/XuZeTG-Ea0QBTOkvxaTAV3wo-T1VP4wO9eoDGL4uH2U1.js"></script>
+            <style>
+                :is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}
+            </style>
+        </head>
+    """
 
 class FalhaAutenticacaoError(Exception):
     """Exceção levantada quando as credenciais ou certificado são inválidos."""
@@ -105,7 +126,9 @@ class ClienteNfseNacional:
 
                 # Extrai o CNPJ/CPF do texto do perfil (geralmente no início
                 # ou entre parênteses). Ex.: "19495981000113"
-
+                cnpj = soup.find("span", class_="inscricao")
+                if cnpj:
+                    perfil_text = cnpj.text.strip()
                 match = re.search(r'\d{11,14}', perfil_text)
                 if match:
                     self._cnpj_usuario = match.group()
@@ -383,8 +406,8 @@ class ClienteNfseNacional:
         paginas = 0
 
         try:
-            while paginas < 50:
-                url = f"{EndpointsNfse.ADN_BASE_URL}/contribuintes/DFe/{nsu:020d}?cnpj={cnpj}"
+            while paginas < 100:
+                url = f"{EndpointsNfse.ADN_BASE_URL}/contribuintes/DFe/{nsu:020d}?cnpjConsulta={cnpj}"
                 logger.info(f"Buscando lote DFe no ADN (NSU={nsu})...")
                 try:
                     resp = self._requisicao_adn("GET", url)
@@ -487,10 +510,12 @@ class ClienteNfseNacional:
             logger.error(f"Erro ao listar notas via ADN: {e}")
             return {"notas": [], "erro": f"Erro na consulta do ADN: {e}"}
 
+    
     def listar_notas_emitidas(
         self,
         data_inicio: Optional[str] = None,
         data_fim: Optional[str] = None,
+        pg: int = 1,
         usar_adn: bool = True,
     ) -> Dict[str, Any]:
         """
@@ -505,7 +530,8 @@ class ClienteNfseNacional:
             params = {
                 "busca": "",
                 "datainicio": data_inicio,
-                "datafim": data_fim
+                "datafim": data_fim,
+                "pg": pg
             }
 
         self.http.sessao.headers.update({"Referer": EndpointsNfse.NOTAS_EMITIDAS})
@@ -525,55 +551,101 @@ class ClienteNfseNacional:
 
             msg_txt = msg_sem_registro.get_text(strip=True) if msg_sem_registro else mensagem
             return {"notas": [], "erro": msg_txt}
+        
+        """
+        if not corpo_tabela:
+            msg_erro_padrao = soup.find("span", {"class": "field-validation-error"})
+            msg_sem_registro = soup.find("span", {"class": "sem-registros"})
 
-        linhas = corpo_tabela.find_all("tr")
+            mensagem = "Erro desconhecido ao listar notas."
+            if msg_erro_padrao:
+                mensagem = msg_erro_padrao.get_text(strip=True)
+            elif msg_sem_registro:
+                mensagem = msg_sem_registro.get_text(strip=True)
+
+            msg_txt = msg_sem_registro.get_text(strip=True) if msg_sem_registro else mensagem
+            return {"notas": [], "erro": msg_txt}
+        """
+        
+        # encontrar a quantidade total de registros consultados através das divs com a classe "paginacao" > "descricao" e pegar o texto da div com a classe "descricao"
+        total_registros = None
+        paginacao = soup.find("div", {"class": "paginacao"})
+        if paginacao:
+            descricao = paginacao.find("div", {"class": "descricao"})
+            if descricao:
+                total_registros = descricao.get_text(strip=True)
+
+        total_paginas = 1
+        
+        # Exibe a quantidade, em inteiro, do total de registros encontrados, removendo possíveis caracteres não numéricos.
+        if total_registros:
+            try:
+                total_registros_int = int(re.sub(r'\D', '', total_registros))
+                total_paginas = (total_registros_int + 14) // 15  # Arredonda para cima
+                print(f"Total de registros encontrados: {total_registros_int}")
+            except ValueError:
+                print(f"Total de registros encontrados: {total_registros}")
+
+        """
+            Loop para percorrer todas as páginas e coletar os registros.
+            A função de processamento de cada página deve ser chamada dentro deste loop.
+        """
         dados_notas = []
+        for pagina in range(1, total_paginas + 1):
+            params["pg"] = pagina
+            resposta_pg = self.http.enviar_requisicao("GET", EndpointsNfse.NOTAS_EMITIDAS, params=params)
+            soup = BeautifulSoup(resposta_pg.content, "html.parser")
+            corpo_tabela = soup.find("tbody")
+            #resultado = self.testa_tabela(corpo_tabela, soup)
+            linhas = corpo_tabela.find_all("tr") if corpo_tabela else []
+            
+            # dados_notas = []
 
-        for linha in linhas:
-            div_opcoes = linha.find("div", {"class": "list-group menu-content"})
-            if not div_opcoes:
-                continue
+            for linha in linhas:
+                div_opcoes = linha.find("div", {"class": "list-group menu-content"})
+                if not div_opcoes:
+                    continue
 
-            raw_status = linha.get("data-situacao", "unknown")
-            status = raw_status if isinstance(raw_status, str) else str(raw_status)
+                raw_status = linha.get("data-situacao", "unknown")
+                status = raw_status if isinstance(raw_status, str) else str(raw_status)
 
-            colunas = linha.find_all("td")
-            data_emissao = ""
-            numero = ""
+                colunas = linha.find_all("td")
+                data_emissao = ""
+                numero = ""
 
-            valor = linha.get("data-valor")
-            if not valor:
-                col_valor = linha.find("td", {"class": "td-valor"})
-                if col_valor:
-                    valor = col_valor.get_text(strip=True)
-            if not valor:
-                valor = "0,00"
+                valor = linha.get("data-valor")
+                if not valor:
+                    col_valor = linha.find("td", {"class": "td-valor"})
+                    if col_valor:
+                        valor = col_valor.get_text(strip=True)
+                if not valor:
+                    valor = "0,00"
 
-            for col in colunas:
-                txt = col.get_text(strip=True)
-                if re.match(r'\d{2}/\d{2}/\d{4}', txt):
-                    data_emissao = txt
-                elif "R$" in txt:
-                    valor = txt
-                elif txt.isdigit() and len(txt) < 15:
-                    numero = txt
+                for col in colunas:
+                    txt = col.get_text(strip=True)
+                    if re.match(r'\d{2}/\d{2}/\d{4}', txt):
+                        data_emissao = txt
+                    elif "R$" in txt:
+                        valor = txt
+                    elif txt.isdigit() and len(txt) < 15:
+                        numero = txt
 
-            links = {}
-            base = EndpointsNfse.BASE_URL
-            for item in div_opcoes.find_all("a"):
-                key = item.get_text(strip=True).replace(" ", "_").lower()
-                links[key] = f"{base}{item['href']}"
+                links = {}
+                base = EndpointsNfse.BASE_URL
+                for item in div_opcoes.find_all("a"):
+                    key = item.get_text(strip=True).replace(" ", "_").lower()
+                    links[key] = f"{base}{item['href']}"
 
-            links.update({
-                "status_danfs-e": status.split("_")[-1].lower(),
-                "valor": valor,
-                "data_emissao": data_emissao,
-                "numero": numero
-            })
-            links.pop("cancelar_nfs-e", None)
-            links.pop("substituir", None)
+                links.update({
+                    "status_danfs-e": status.split("_")[-1].lower(),
+                    "valor": valor,
+                    "data_emissao": data_emissao,
+                    "numero": numero
+                })
+                links.pop("cancelar_nfs-e", None)
+                links.pop("substituir", None)
 
-            dados_notas.append(links)
+                dados_notas.append(links)
 
         return {"notas": dados_notas}
 
@@ -790,6 +862,13 @@ class ClienteNfseNacional:
                 )
                 html_content = self.obter_impressao_html(chave_nota)
                 if html_content:
+                    # Substituir todo o conteúdo da tag <head>, do html_content, pelo conteúdo da constante Configuracoes.HTML_HEAD
+                    soup = BeautifulSoup(html_content, "html.parser")
+                    head_tag = soup.head
+                    if head_tag:
+                        head_tag.clear()
+                        head_tag.append(BeautifulSoup(Configuracoes.HTML_HEAD, "html.parser"))
+                    html_content = str(soup)
                     caminho_html = caminho_completo.with_suffix(".html")
                     caminho_html.write_text(html_content, encoding="utf-8")
                     logger.info(f"HTML de impressão salvo em: {caminho_html}")
@@ -806,8 +885,8 @@ class ClienteNfseNacional:
             cnpj = self.obter_cnpj()
             nsu = 0
             paginas = 0
-            while paginas < 50:
-                adn_url = f"{EndpointsNfse.ADN_BASE_URL}/contribuintes/DFe/{nsu:020d}?cnpj={cnpj}"
+            while paginas < 5:
+                adn_url = f"{EndpointsNfse.ADN_BASE_URL}/contribuintes/DFe/{nsu:020d}?cnpjConsulta={cnpj}"
                 try:
                     resp = self._requisicao_adn("GET", adn_url)
                 except Exception as ex:
