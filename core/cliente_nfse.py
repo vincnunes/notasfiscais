@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 from core.certificado import GerenciadorCertificadoA1
 from core.cliente_http import ClienteHttp
@@ -28,16 +29,46 @@ class Configuracoes:
             <meta name="viewport" content="width=device-width" />
             <title>NFS-e | Emissor Nacional</title>
             <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
-            <link href="css/PDtS8QyKLPV_WFB7lNdmPoWCZ7YlRw1fT_kU1nqUfP81.css" rel="stylesheet"/>
-            <link href="css/r3Oy2mATr5fNPFrAwXyrpimbFdOiQI95thFAzt-x_uA1.css" rel="stylesheet"/>
+            <link href="../../../../../css/PDtS8QyKLPV_WFB7lNdmPoWCZ7YlRw1fT_kU1nqUfP81.css" rel="stylesheet">
+            <link href="../../../../../css/r3Oy2mATr5fNPFrAwXyrpimbFdOiQI95thFAzt-x_uA1.css" rel="stylesheet">
 
             <script type="text/javascript">
                 window.UrlBase = "https://www.nfse.gov.br/consultapublica/";
                 window.UrlRest = "https://restnfseprod.srv.cd.serpro";
             </script>
-    
-            <script src="js/GbkjYar3JmMIqiJ9pjLxX5XtoaEPte_ZbIFG2t7NW0Q1.js"></script>
-            <script src="js/XuZeTG-Ea0QBTOkvxaTAV3wo-T1VP4wO9eoDGL4uH2U1.js"></script>
+
+            <script src="../../../../../js/GbkjYar3JmMIqiJ9pjLxX5XtoaEPte_ZbIFG2t7NW0Q1.js"></script>
+            <script src="../../../../../js/XuZeTG-Ea0QBTOkvxaTAV3wo-T1VP4wO9eoDGL4uH2U1.js"></script>
+            <style>
+                :is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}
+            </style>
+        </head>
+    """
+
+    HTML_HEAD_VIEW = """
+        <head>
+            <meta name="viewport" content="width=device-width">
+            
+            <title>NFS-e | Portal Contribuinte</title>
+            
+            <!--link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i" rel="stylesheet"-->
+            
+            <link href="../../../../../css/view/pFIejuQkAjItMBe9kttgsOupDt-4ovzYElQSv4EZf-c1.css" rel="stylesheet">
+            <link href="../../../../../css/view/ELSCd1M3wF7qVoekrDgI-eB23LJO1732MHiPFo1jsk81.css" rel="stylesheet">
+
+            <script type="text/javascript">
+                window.UrlBase = "https://www.nfse.gov.br/emissornacional/";
+                window.UrlRest = "https://restnfseprod.srv.cd.serpro";
+                window.sessionStorage.setItem("accessToken", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRobWV0aG9kIjoiU0VOSEEiLCJ1bmlxdWVfbmFtZSI6IiIsImluc2NyaWNhbyI6IjIzNjc0NzE0MDAwMTgwIiwidGlwb19pbnNjcmljYW8iOiJDTlBKIiwibm9tZSI6IiIsInJvbGUiOiJDT05UUklCVUlOVEUiLCJuYmYiOjE3OTQ1NzIxMDcsImV4cCI6MTc5NDY2MjEwNywiaWF0IjoxNzk0NTcyMTA3LCJpc3MiOiJodHRwOi8vd3d3LnNlcnByby5nb3YuYnIifQ.viHaBmxooaGY_lZ4jwSYBG55oe8hbrlwNpRz-nhxtzM");
+                window.sessionTimeout = 1200;
+                window.sessionTimeoutAtivo = null;
+            </script>
+            <script src="../../../../../js/view/XuZeTG-Ea0QBTOkvxaTAV3wo-T1VP4wO9eoDGL4uH2U1.js"></script>
+            <style type="text/css">
+                .dropdown-submenu:hover>.dropdown-menu{display:none}
+            </style>
+            <script src="../../../../../js/view/xNk_rCN1utzxULNvGH9fMciTnQaAAgj9bgp6wNTdbXo1.js"></script>
+
             <style>
                 :is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}
             </style>
@@ -87,6 +118,7 @@ class ClienteNfseNacional:
         self._tipo_consulta: Optional[str] = None
         self._cnpj_usuario: Optional[str] = None
 
+
     def _preparar_diretorios(self) -> None:
         """Cria diretórios base legados.
 
@@ -94,6 +126,7 @@ class ClienteNfseNacional:
         """
         Path("downloads/xmls").mkdir(parents=True, exist_ok=True)
         Path("downloads/pdfs").mkdir(parents=True, exist_ok=True)
+
 
     def _obter_token_verificacao(self) -> None:
         """Realiza requisição na página de login para extrair o RequestVerificationToken."""
@@ -111,6 +144,7 @@ class ClienteNfseNacional:
             raise ValueError("Não foi possível localizar o token CSRF na página de login.")
 
         raise ValueError("Não foi possível localizar o token CSRF na página de login.")
+
 
     def esta_autenticado(self) -> bool:
         """Verifica se a sessão atual possui acesso ao Dashboard e extrai o CNPJ."""
@@ -137,6 +171,7 @@ class ClienteNfseNacional:
                 return True
         return False
 
+
     def obter_cnpj(self) -> Optional[str]:
         """Retorna o CNPJ/CPF autenticado, se disponível."""
         if self._cnpj_usuario:
@@ -148,6 +183,7 @@ class ClienteNfseNacional:
                 return apenas_digitos
 
         return None
+
 
     def autenticar(self, usar_certificado: bool = True) -> bool:
         """
@@ -200,6 +236,7 @@ class ClienteNfseNacional:
             raise FalhaAutenticacaoError("Falha na autenticação: Usuário ou senha incorretos.")
         return True
 
+
     def emitir_nota_simples(self, payload_dados: Dict[str, Any]) -> None:
         """
         Envia os dados de uma Declaração de Prestação de Serviço (DPS) para emitir NFS-e.
@@ -213,6 +250,7 @@ class ClienteNfseNacional:
             EndpointsNfse.EMISSAO_DPS,
             data=payload_dados
         )
+
 
     def _requisicao_adn(self, metodo: str, url: str, **kwargs: Any) -> Any:
         """Envia requisição usando certificado digital para o ADN."""
@@ -265,6 +303,7 @@ class ClienteNfseNacional:
                     if tentativa == tentativas - 1:
                         raise e
                     time.sleep(1)
+
 
     def salvar_xml_adn(
         self,
@@ -335,6 +374,7 @@ class ClienteNfseNacional:
             logger.error(f"Erro ao salvar XML da ADN: {e}")
             return ""
 
+
     def obter_impressao_html(self, chave: str) -> Optional[str]:
         """Recupera o HTML da página de impressão da nota a partir da chave de 44 dígitos."""
         try:
@@ -360,10 +400,11 @@ class ClienteNfseNacional:
 
             logger.info(f"Baixando HTML de impressão: {impressao_url}")
             resp_imp = self.http.enviar_requisicao("GET", impressao_url)
-            return resp_imp.text
+            return resp.text
         except Exception as e:
             logger.error(f"Erro ao obter HTML de impressão da nota {chave}: {e}")
             return None
+
 
     def _listar_notas_adn(
         self,
@@ -649,6 +690,7 @@ class ClienteNfseNacional:
 
         return {"notas": dados_notas}
 
+
     def listar_notas_recebidas(
         self,
         data_inicio: Optional[str] = None,
@@ -738,9 +780,11 @@ class ClienteNfseNacional:
 
         return {"notas": dados_notas}
 
+
     def define_tipo_consulta(self, tipo_consulta: str) -> None:
         """Define o tipo de consulta atual."""
         self._tipo_consulta = tipo_consulta
+
 
     def _baixar_arquivo(
         self,
@@ -867,7 +911,15 @@ class ClienteNfseNacional:
                     head_tag = soup.head
                     if head_tag:
                         head_tag.clear()
-                        head_tag.append(BeautifulSoup(Configuracoes.HTML_HEAD, "html.parser"))
+                        head_tag.append(BeautifulSoup(Configuracoes.HTML_HEAD_VIEW, "html.parser"))
+                    # Substituir todos os atributos href="/EmissorNacional/" pelo caminho correto https://www.nfse.gov.br/EmissorNacional/login
+                    for a_tag in soup.find_all("a", href=True):
+                        if a_tag["href"].startswith("/EmissorNacional/"):
+                            a_tag["href"] = f"https://www.nfse.gov.br{a_tag['href']}"
+                    # Substituir todos os atributos src das imagens que tenham caminho relativo "/EmissorNacional/img/" pelo caminho correto "../../../../../img/" e manter o restante do caminho
+                    for img_tag in soup.find_all("img", src=True):
+                        if img_tag["src"].startswith("/EmissorNacional/img/"):
+                            img_tag["src"] = f"../../../../../img/{img_tag['src'].split('/')[-1]}"
                     html_content = str(soup)
                     caminho_html = caminho_completo.with_suffix(".html")
                     caminho_html.write_text(html_content, encoding="utf-8")
@@ -875,6 +927,136 @@ class ClienteNfseNacional:
                     return str(caminho_html)
             logger.error(f"Erro ao baixar {extensao}: {e}")
             return ""
+
+
+    @staticmethod
+    def add_tag(
+        soup: BeautifulSoup, label_text: str, span_text: str, tag_after: Optional[Tag]
+    ) -> BeautifulSoup:
+        """Insere um par label/span antes da tag indicada."""
+        if tag_after:
+            chave_label = soup.new_tag("label")
+            chave_label["class"] = "control-label"
+            label_span = soup.new_tag("span")
+            label_span.string = label_text
+            chave_span = soup.new_tag("span")
+            chave_span["class"] = "form-control-static texto"
+            chave_span.string = span_text
+            chave_label.append(label_span)
+
+            tag_after.insert_before(chave_label)
+            tag_after.insert_before(chave_span)
+        return soup
+
+
+    def baixar_html(self, url: str, status: str, data_emissao: Any = None) -> str:
+        """Baixa o XML de uma nota e salva no disco usando a estrutura configurada."""
+        try:
+            if self.caminho_pfx and self.senha_pfx:
+                nome_arquivo = f"{url.split('/')[-1]}.html"
+                
+                # Preparação das tags de tempo
+                ano, mes, dia = "0000", "00", "00"
+                if data_emissao:
+                    try:
+                        if isinstance(data_emissao, str):
+                            from datetime import datetime
+                            if "T" in data_emissao:
+                                dt = datetime.fromisoformat(data_emissao.replace("Z", "+00:00"))
+                            elif "/" in data_emissao:
+                                dt = datetime.strptime(data_emissao, "%d/%m/%Y")
+                            else:
+                                dt = datetime.strptime(data_emissao, "%Y-%m-%d %H:%M:%S")
+                            ano, mes, dia = dt.strftime("%Y"), dt.strftime("%m"), dt.strftime("%d")
+                        elif hasattr(data_emissao, "strftime"):
+                            ano = data_emissao.strftime("%Y")
+                            mes = data_emissao.strftime("%m")
+                            dia = data_emissao.strftime("%d")
+                    except ValueError:
+                        pass
+
+                # Tags disponíveis
+                tags = {
+                    "{ANO}": ano,
+                    "{MES}": mes,
+                    "{DIA}": dia,
+                    "{CLIENTE}": self.razao_social or self._cnpj_usuario or "CLIENTE_DESCONHECIDO",
+                    "{CNPJ}": self._cnpj_usuario or "00000000000000",
+                    "{TIPO}": self._tipo_consulta or "outros",
+                    "{STATUS}": (status or "gerada").lower(),
+                    "{EXT}": "htmls"
+                }
+
+                estrutura = self.path_structure
+                if "{TIPO}" not in estrutura:
+                    estrutura += "/{TIPO}"
+                if "{STATUS}" not in estrutura:
+                    estrutura += "/{STATUS}"
+                if "{EXT}" not in estrutura:
+                    estrutura += "/{EXT}"
+
+                # Aplica as tags na estrutura
+                caminho_relativo = estrutura
+                for tag, val in tags.items():
+                    caminho_relativo = caminho_relativo.replace(tag, val)
+
+                # Constrói o caminho final absoluto/relativo ao CWD usando Path do pathlib
+                caminho_final = Path(self.save_path)
+                for part in [p for p in caminho_relativo.replace("\\", "/").split("/") if p.strip()]:
+                    caminho_final = caminho_final / part
+
+                caminho_final.mkdir(parents=True, exist_ok=True)
+                caminho_completo = caminho_final / nome_arquivo
+
+                chave_nota = url.split("/")[-1]
+
+                html_content = self.obter_impressao_html(chave_nota)
+                if html_content:
+                    # Substituir todo o conteúdo da tag <head>, do html_content, pelo conteúdo da constante Configuracoes.HTML_HEAD
+                    soup = BeautifulSoup(html_content, "html.parser")
+                    head_tag = soup.head
+                    if head_tag:
+                        head_tag.clear()
+                        head_tag.append(BeautifulSoup(Configuracoes.HTML_HEAD_VIEW, "html.parser"))
+                    # Substituir todos os atributos href="/EmissorNacional/" pelo caminho correto https://www.nfse.gov.br/EmissorNacional/login
+                    for a_tag in soup.find_all("a", href=True):
+                        if a_tag["href"].startswith("/EmissorNacional/"):
+                            a_tag["href"] = f"https://www.nfse.gov.br{a_tag['href']}"
+                    # Substituir todos os atributos src das imagens que tenham caminho relativo "/EmissorNacional/img/" pelo caminho correto "../../../../../img/" e manter o restante do caminho
+                    for img_tag in soup.find_all("img", src=True):
+                        if img_tag["src"].startswith("/EmissorNacional/img/"):
+                            img_tag["src"] = f"../../../../../img/{img_tag['src'].split('/')[-1]}"
+                    # Inserir um campo (label e span) para exibir a chave da nota antes do label 'Número' no grupo de informações "Identificação do DPS". Inserir atributo class="form-control-static texto"
+                    identificacao_dps = soup.find("h3", string="Identificação do DPS")
+                    if identificacao_dps:
+                        numero_label = identificacao_dps.find_next("label", string="Número")
+                        if numero_label:
+                            self.add_tag(
+                                soup, "Número da Nota", str(int(chave_nota[23:36])), numero_label
+                            )
+
+                        serie_label = identificacao_dps.find_next("label", string="Série")
+                        if serie_label:
+                            self.add_tag(
+                                soup, "Código de Verificação", str(int(chave_nota[40:50])), serie_label
+                            )
+
+                        dataemissao_label = identificacao_dps.find_next("label", string="Data de emissão")
+                        # pegar a tag span correspondente a tag label da data de emissão 
+                        if dataemissao_label:
+                            self.add_tag(
+                                soup, "Competência", dataemissao_label.find_next("span").get_text(strip=True), dataemissao_label
+                            )
+                        
+                    html_content = str(soup)
+                    caminho_html = caminho_completo.with_suffix(".html")
+                    caminho_html.write_text(html_content, encoding="utf-8")
+                    logger.info(f"HTML de impressão salvo em: {caminho_html}")
+                    return str(caminho_html)
+        except Exception as e:
+            logger.error(f"Erro ao baixar html: {e}")
+            return ""
+
 
     def baixar_xml(self, url: str, status: str, data_emissao: Any = None) -> str:
         """Baixa o XML de uma nota e salva no disco usando a estrutura configurada."""
@@ -917,6 +1099,7 @@ class ClienteNfseNacional:
             logger.warning(f"Chave {chave} não encontrada no ADN.")
 
         return self._baixar_arquivo(url, "xml", status, data_emissao)
+
 
     def baixar_pdf(self, url: str, status: str, data_emissao: Any = None) -> str:
         """Baixa o PDF de uma nota e salva no disco usando a estrutura configurada."""
@@ -1019,4 +1202,3 @@ class ClienteNfseNacional:
                     logger.error(f"Erro ao gerar PDF offline: {ex}")
         
         return resultado_download
-

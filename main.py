@@ -44,7 +44,7 @@ def main():
         print(f"Downloads serão salvos em: downloads/{cnpj}/")
 
         # A partir daqui, a sessão já está com os cookies corretos
-        resultado = cliente.listar_notas_emitidas("06/11/2026", "30/11/2026", usar_adn=False)
+        resultado = cliente.listar_notas_emitidas("06/11/2026", "06/11/2026", usar_adn=False)
         # resultado = cliente.listar_notas_recebidas("01/01/2026", "31/01/2026")
 
         if "erro" in resultado:
@@ -55,7 +55,7 @@ def main():
                 situacao = nota.get("status_danfs-e")
                 data_emissao = nota.get("data_emissao")
                 if nota.get("download_danfs-e"):
-                    caminho = cliente.baixar_pdf(nota["download_danfs-e"], situacao, data_emissao)
+                    caminho = cliente.baixar_html(nota["download_danfs-e"], situacao, data_emissao)
                     print(f"PDF Salvo em: {caminho}")
                 """if nota.get("download_xml"):
                     caminho = cliente.baixar_xml(nota["download_xml"], situacao, data_emissao)

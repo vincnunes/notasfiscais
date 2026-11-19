@@ -28,6 +28,7 @@
 - mecanismo de **fallback para HTML de impressão** se o download do PDF retornar 403 ou falhar
 - organização dos arquivos por **cliente, tipo, ano, mês, status e extensão**
 - conversão temporária e segura de PFX para PEM
+- extração dos campos de HTMLs de NFS-e e inserção opcional no PostgreSQL
 - testes automatizados com `pytest` e lint com `ruff`
 
 ## Estrutura atual do repositório
@@ -135,6 +136,13 @@ downloads/
 ```
 
 Se `path_structure` não informar `STATUS` ou `EXT`, o cliente os adiciona automaticamente.
+
+## Importação de HTMLs para PostgreSQL
+
+Os HTMLs de visualização podem ser importados com `core.html_parser` e
+`core.notafiscal_postgres`. A proposta de tabela, instruções e exemplos estão
+em [Importação de HTMLs](docs/importacao_html.md). A importação é explícita:
+baixar notas não altera o banco de dados.
 
 ## Testes e qualidade
 

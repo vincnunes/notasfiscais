@@ -42,3 +42,14 @@ Notas:
 
 Para detalhes de implementação, consulte os arquivos em `core/`.
 
+## HTML e PostgreSQL
+
+- `core.html_parser.extrair_campos_html(caminho)` retorna uma lista ordenada de
+  dicionários com `secao`, `label` e `valor`, todos strings.
+- `core.notafiscal_postgres.inserir_nota(conexao, campos)` insere uma nota;
+  `importar_htmls(conexao, diretorio)` insere os arquivos `.html` do diretório
+  e retorna a quantidade. A transação pertence ao chamador.
+
+Consulte [Importação de HTMLs](importacao_html.md) para a proposta de tabela,
+dependências opcionais e exemplo de transação.
+

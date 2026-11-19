@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 import core.cliente_nfse as cliente_nfse_module
 from core.cliente_nfse import ClienteNfseNacional, EndpointsNfse, FalhaAutenticacaoError
@@ -108,6 +109,51 @@ HTML_SEM_TBODY_VAZIO = "<html><body><p>vazio</p></body></html>"
 
 def _mock_response(content_text: str) -> FakeResponse:
     return FakeResponse(content=content_text.encode("utf-8"))
+
+
+def test_baixar_html_insere_campos_antes_dos_rotulos(tmp_path, monkeypatch):
+    cliente = ClienteNfseNacional(
+        caminho_pfx="teste.pfx", senha_pfx="teste", save_path=str(tmp_path)
+    )
+    html = """
+    <h3>Identificação do DPS</h3>
+    <div><label>Número</label><span>311</span></div>
+    <div><label>Série</label><span>70000</span></div>
+    """
+    monkeypatch.setattr(cliente, "obter_impressao_html", lambda chave: html)
+    chave = "0" * 23 + "0000000000073" + "0" * 4 + "0000000123"
+
+    caminho = cliente.baixar_html(f"https://exemplo.invalid/{chave}", "gerada")
+    soup = BeautifulSoup(Path(caminho).read_text(encoding="utf-8"), "html.parser")
+    numero = soup.find("label", string="Número")
+    serie = soup.find("label", string="Série")
+
+    for referencia, texto, valor in [
+        (numero, "Número da Nota", "73"),
+        (serie, "Chave de Acesso", "123"),
+    ]:
+        span = referencia.find_previous_sibling()
+        label = span.find_previous_sibling()
+        assert (label.name, label.get_text(), label.get("class")) == (
+            "label", texto, ["control-label"]
+        )
+        assert (span.name, span.get_text(), span.get("class")) == (
+            "span", valor, ["form-control-static", "texto"]
+        )
+
+
+@pytest.mark.parametrize(
+    "html",
+    ["<h3>Outra seção</h3>", "<h3>Identificação do DPS</h3><div>Sem campos</div>"],
+)
+def test_baixar_html_sem_rotulos_nao_converte_chave(tmp_path, monkeypatch, html):
+    cliente = ClienteNfseNacional(
+        caminho_pfx="teste.pfx", senha_pfx="teste", save_path=str(tmp_path)
+    )
+    monkeypatch.setattr(cliente, "obter_impressao_html", lambda chave: html)
+
+    caminho = cliente.baixar_html("https://exemplo.invalid/chave-invalida", "gerada")
+    assert Path(caminho).read_text(encoding="utf-8") == html
 
 
 def test_preparar_diretorios_cria_legado(tmp_path, monkeypatch):
