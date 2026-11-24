@@ -94,7 +94,6 @@ def get_fields():
     return fields
 
 
-
 def _texto(elemento: Tag) -> str:
     if elemento is None:
         return ""

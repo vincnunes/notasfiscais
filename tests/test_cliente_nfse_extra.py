@@ -8,6 +8,19 @@ import core.cliente_nfse as cliente_nfse_module
 from core.cliente_nfse import ClienteNfseNacional, EndpointsNfse, FalhaAutenticacaoError
 
 
+@pytest.mark.parametrize(
+    "data_emissao",
+    [
+        "06/11/2026 16:57:00-03:00",
+        "06/11/2026 \r\n            às\r\n            16:57:00-03:00",
+    ],
+)
+def test_data_converter_com_fuso(data_emissao):
+    assert ClienteNfseNacional.data_converter(data_emissao) == (
+        "2026", "11", "06", "16:57:00", "-0300"
+    )
+
+
 class FakeResponse:
     def __init__(self, *, content=b"", text="", chunks=None):
         self.content = content

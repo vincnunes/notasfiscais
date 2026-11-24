@@ -116,7 +116,7 @@ class ClienteNfseNacional:
         self.razao_social = razao_social
         self._token_csrf: Optional[str] = None
         self._tipo_consulta: Optional[str] = None
-        self._cnpj_usuario: Optional[str] = None
+        self._cnpj_usuario: Optional[str] = usuario or None
 
 
     def _preparar_diretorios(self) -> None:
@@ -126,6 +126,7 @@ class ClienteNfseNacional:
         """
         Path("downloads/xmls").mkdir(parents=True, exist_ok=True)
         Path("downloads/pdfs").mkdir(parents=True, exist_ok=True)
+        Path("downloads/htmls").mkdir(parents=True, exist_ok=True)
 
 
     def _obter_token_verificacao(self) -> None:
@@ -930,6 +931,31 @@ class ClienteNfseNacional:
 
 
     @staticmethod
+    def data_converter(
+        data_emissao: Any
+    ) -> str:
+        # Converte a data de emissão para ano, mês, dia, horra completa e fuso horário ajustando a formatação da string recebida: "dd/mm/yyyy' \r\n            às\r\n            'HH:MM:SS-03:00" para formato utilizável pelo datetime
+        ano, mes, dia, hora_completa, fuso = "0000", "00", "00", "00:00:00", "-03:00"
+        if data_emissao:
+            try:
+                if isinstance(data_emissao, str):
+                    from datetime import datetime
+                    data_emissao = data_emissao.replace(" \r\n            às\r\n            ", " ").strip()
+                    if "T" in data_emissao:
+                        dt = datetime.fromisoformat(data_emissao.replace("Z", "+00:00"))
+                    elif "/" in data_emissao:
+                        dt = datetime.strptime(data_emissao, "%d/%m/%Y %H:%M:%S%z")
+                    ano, mes, dia = f"{dt.year:04d}", f"{dt.month:02d}", f"{dt.day:02d}"
+                    if hasattr(dt, "hour"):
+                        hora_completa = f"{dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}"
+                    if hasattr(dt, "tzinfo") and dt.tzinfo:
+                        fuso = dt.strftime("%z")
+            except Exception as e:
+                logger.error(f"Erro ao converter data de emissão: {e}")
+        return ano + "-" + mes + "-" + dia + " " + hora_completa + fuso
+
+
+    @staticmethod
     def add_tag(
         soup: BeautifulSoup, label_text: str, span_text: str, tag_after: Optional[Tag]
     ) -> BeautifulSoup:
@@ -1026,8 +1052,21 @@ class ClienteNfseNacional:
                     for img_tag in soup.find_all("img", src=True):
                         if img_tag["src"].startswith("/EmissorNacional/img/"):
                             img_tag["src"] = f"../../../../../img/{img_tag['src'].split('/')[-1]}"
-                    # Inserir um campo (label e span) para exibir a chave da nota antes do label 'Número' no grupo de informações "Identificação do DPS". Inserir atributo class="form-control-static texto"
+                    # Ajustar os campos do tipo data que contém a formatação "dd/mm/aaaa' às 'HH:MM:ss'-03:00'" para o formato "aaaa-mm-dd HH:MM:ss"
+                    cancel = """Evento de Cancelamento de NFS-e /
+      """
+                    identificacao_nfe = soup.find("h3", string="Identificação da NFS-e")
                     identificacao_dps = soup.find("h3", string="Identificação do DPS")
+                    identificacao_clm = soup.find("div", class_="pnlSujeito semi-aberto sujeito").find_next("h3", class_="panel-title") if soup.find("div", class_="pnlSujeito semi-aberto sujeito") else None
+                    datageracao = self.data_converter(identificacao_nfe.find_next("label", string="Data de geração").find_next("span", class_="form-control-static texto").get_text(strip=True))
+                    identificacao_nfe.find_next("label", string="Data de geração").find_next("span", class_="form-control-static texto").string = datageracao
+                    identificacao_dps.find_next("label", string="Data de emissão").find_next("span", class_="form-control-static texto").string = self.data_converter(identificacao_dps.find_next("label", string="Data de emissão").find_next("span", class_="form-control-static texto").get_text(strip=True))
+                    if identificacao_clm is not None:
+                        identificacao_clm.find_next("label", string="Data do Evento").find_next("span", class_="form-control-static texto").string = self.data_converter(identificacao_clm.find_next("label", string="Data do Evento").find_next("span", class_="form-control-static texto").get_text(strip=True))
+                    if identificacao_clm is not None:
+                        identificacao_clm.find_next("label", string="Data do registro do Evento").find_next("span", class_="form-control-static texto").string = self.data_converter(identificacao_clm.find_next("label", string="Data do registro do Evento").find_next("span", class_="form-control-static texto").get_text(strip=True))
+
+                    # Inserir um campo (label e span) para exibir a chave da nota antes do label 'Número' no grupo de informações "Identificação do DPS". Inserir atributo class="form-control-static texto"
                     if identificacao_dps:
                         numero_label = identificacao_dps.find_next("label", string="Número")
                         if numero_label:
@@ -1045,7 +1084,7 @@ class ClienteNfseNacional:
                         # pegar a tag span correspondente a tag label da data de emissão 
                         if dataemissao_label:
                             self.add_tag(
-                                soup, "Competência", dataemissao_label.find_next("span").get_text(strip=True), dataemissao_label
+                                soup, "Competência", datageracao, dataemissao_label
                             )
                         
                     html_content = str(soup)

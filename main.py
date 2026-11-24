@@ -56,7 +56,7 @@ def main():
                 data_emissao = nota.get("data_emissao")
                 if nota.get("download_danfs-e"):
                     caminho = cliente.baixar_html(nota["download_danfs-e"], situacao, data_emissao)
-                    print(f"PDF Salvo em: {caminho}")
+                    print(f"HTML Salvo em: {caminho}")
                 """if nota.get("download_xml"):
                     caminho = cliente.baixar_xml(nota["download_xml"], situacao, data_emissao)
                     print(f"XML Salvo em: {caminho}")"""
