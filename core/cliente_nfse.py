@@ -1086,7 +1086,12 @@ class ClienteNfseNacional:
                             self.add_tag(
                                 soup, "Competência", datageracao, dataemissao_label
                             )
-                        
+
+                    identificacao_versao = soup.find("div", _class="versao")
+                    if identificacao_versao:
+                        self.add_tag(
+                            soup, "Versão", identificacao_versao.get_text(strip=True), identificacao_versao
+                        )
                     html_content = str(soup)
                     caminho_html = caminho_completo.with_suffix(".html")
                     caminho_html.write_text(html_content, encoding="utf-8")
