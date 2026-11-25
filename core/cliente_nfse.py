@@ -975,6 +975,26 @@ class ClienteNfseNacional:
         return soup
 
 
+    @staticmethod
+    def add_hidden_tag(
+        soup: BeautifulSoup, label_text: str, span_text: str, tag_after: Optional[Tag]
+    ) -> BeautifulSoup:
+        """Insere um par label/span antes da tag indicada."""
+        if tag_after:
+            chave_label = soup.new_tag("label")
+            chave_label["style"] = "display:none"
+            label_span = soup.new_tag("span")
+            label_span.string = label_text
+            chave_span = soup.new_tag("span")
+            chave_span["style"] = "display:none"
+            chave_span.string = span_text
+            chave_label.append(label_span)
+
+            tag_after.insert_before(chave_label)
+            tag_after.insert_before(chave_span)
+        return soup
+
+
     def baixar_html(self, url: str, status: str, data_emissao: Any = None) -> str:
         """Baixa o XML de uma nota e salva no disco usando a estrutura configurada."""
         try:
@@ -1086,12 +1106,21 @@ class ClienteNfseNacional:
                             self.add_tag(
                                 soup, "Competência", datageracao, dataemissao_label
                             )
-
-                    identificacao_versao = soup.find("div", _class="versao")
-                    if identificacao_versao:
-                        self.add_tag(
-                            soup, "Versão", identificacao_versao.get_text(strip=True), identificacao_versao
+                        self.add_hidden_tag(
+                            soup, "Natureza da Operação", "1", dataemissao_label
                         )
+                        self.add_hidden_tag(
+                            soup, "Regime Especial de Tributação", "6", dataemissao_label
+                        )
+                        self.add_hidden_tag(
+                            soup, "Optante pelo Simples Nacional", "1", dataemissao_label
+                        )
+                        self.add_hidden_tag(
+                            soup, "Incentivador Cultural", "2", dataemissao_label
+                        )
+                    """identificacao_versao = soup.find("div", _class="versao")
+                    if identificacao_versao:"""
+                        
                     html_content = str(soup)
                     caminho_html = caminho_completo.with_suffix(".html")
                     caminho_html.write_text(html_content, encoding="utf-8")
